@@ -1,0 +1,77 @@
+name: Release
+
+# On a published GitHub release tagged v<version>: attaches the provider jar (with its SHA-256 and a build provenance
+# attestation) to the release, then publishes it to Maven Central. See PUBLISHING.md.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  github-release:
+    name: Attach the jar to the release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Check that the tag matches the version
+        id: version
+        run: |
+          version=$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::The tag ${GITHUB_REF_NAME} does not match the version ${version} in pom.xml"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and test
+        run: mvn -B -ntp verify
+
+      - name: Attest the build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: target/smstunnel-keycloak-${{ steps.version.outputs.version }}.jar
+
+      - name: Upload the jar and its checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cd target
+          sha256sum "smstunnel-keycloak-${VERSION}.jar" > "smstunnel-keycloak-${VERSION}.jar.sha256"
+          gh release upload "${GITHUB_REF_NAME}" "smstunnel-keycloak-${VERSION}.jar" "smstunnel-keycloak-${VERSION}.jar.sha256" --clobber
+
+  maven-central:
+    name: Publish to Maven Central
+    needs: github-release
+    runs-on: ubuntu-latest
+    environment: maven-central
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          server-id: central
+          server-username: CENTRAL_TOKEN_USERNAME
+          server-password: CENTRAL_TOKEN_PASSWORD
+
+      - name: Test, sign and upload
+        run: mvn -B -ntp -Prelease deploy
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}

@@ -1,0 +1,17 @@
+target/
+e2e/runner/target/
+dependency-reduced-pom.xml
+*.class
+*.log
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.DS_Store
+.env
+*.asc
+# Never commit a vault: it holds API keys.
+vault/
+e2e/vault/

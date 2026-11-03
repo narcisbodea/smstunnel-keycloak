@@ -1,0 +1,60 @@
+# End-to-end test: Keycloak with this provider and the test realm, and a scripted sign-in that reads each code from
+# the SMSTunnel test server's database. Never point it at production.
+#
+#   mvn -DskipTests package                       # builds ../target/smstunnel-keycloak-<version>.jar
+#   export SMSTUNNEL_VAULT_DIR=/path/to/vault     # holds the file smstunnel-test_smstunnel__api__key (the test key)
+#   export SMSTUNNEL_E2E_MONGO_URL=mongodb://host.docker.internal:27018/<database>?directConnection=true
+#   docker compose -f e2e/docker-compose.yml run --rm e2e
+#   docker compose -f e2e/docker-compose.yml down -v
+name: smstunnel-keycloak-e2e
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.8.1}
+    command:
+      - start-dev
+      - --import-realm
+      - --vault=file
+      - --vault-dir=/opt/keycloak/vault
+      - --health-enabled=true
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin-e2e-only
+      # Read by the realm file (${SMSTUNNEL_BASE_URL}).
+      SMSTUNNEL_BASE_URL: ${SMSTUNNEL_BASE_URL:-http://host.docker.internal:3141}
+      JAVA_OPTS_KC_HEAP: -Xms256m -Xmx768m
+    volumes:
+      - ../target/smstunnel-keycloak-${PROVIDER_VERSION:-1.0.0}.jar:/opt/keycloak/providers/smstunnel-keycloak.jar:ro
+      - ./realm:/opt/keycloak/data/import:ro
+      - ${SMSTUNNEL_VAULT_DIR:?set SMSTUNNEL_VAULT_DIR to the folder with the vault file}:/opt/keycloak/vault:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+    mem_limit: 1536m
+
+  e2e:
+    image: maven:3.9-eclipse-temurin-21
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    working_dir: /runner
+    volumes:
+      - ./runner:/runner
+      - m2:/root/.m2
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_ADMIN_PASSWORD: admin-e2e-only
+      SMSTUNNEL_E2E_MONGO_URL: ${SMSTUNNEL_E2E_MONGO_URL:?set SMSTUNNEL_E2E_MONGO_URL to the test server database}
+      MAVEN_OPTS: -Xmx512m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["mvn", "-B", "-ntp", "test"]
+    mem_limit: 1g
+
+volumes:
+  m2:

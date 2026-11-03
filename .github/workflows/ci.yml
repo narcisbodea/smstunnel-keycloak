@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Keycloak ${{ matrix.keycloak }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The current release, and older 26.x releases the extension supports.
+        keycloak: ['26.8.1', '26.6.4', '26.4.7', '26.0.8']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Unit tests and the provider jar
+        run: mvn -B -ntp verify "-Dkeycloak.version=${{ matrix.keycloak }}"
+      - name: Check what the jar holds
+        run: |
+          jar tf target/smstunnel-keycloak-*.jar > contents.txt
+          grep -q '^META-INF/services/org.keycloak.authentication.AuthenticatorFactory$' contents.txt
+          grep -q '^META-INF/services/org.keycloak.authentication.RequiredActionFactory$' contents.txt
+          grep -q '^theme-resources/templates/smstunnel-sms-code.ftl$' contents.txt
+          grep -q '^theme-resources/messages/messages_ro.properties$' contents.txt
+          grep -q '^io/smstunnel/SmsTunnelClient.class$' contents.txt
+      - name: Keep the jar
+        if: matrix.keycloak == '26.8.1'
+        uses: actions/upload-artifact@v7
+        with:
+          name: smstunnel-keycloak-jar
+          path: target/smstunnel-keycloak-*.jar
+          if-no-files-found: error
+
+  release-files:
+    name: Sources and Javadoc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build the release files without signing
+        run: mvn -B -ntp -Prelease -DskipTests -Dgpg.skip verify

@@ -1,0 +1,225 @@
+{
+  "realm": "smstunnel-test",
+  "displayName": "SMSTunnel Test",
+  "enabled": true,
+  "sslRequired": "none",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "ro"],
+  "defaultLocale": "en",
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 30,
+  "browserFlow": "browser with SMSTunnel",
+  "requiredActions": [
+    {
+      "alias": "smstunnel-phone-number",
+      "name": "SMSTunnel: add a phone number",
+      "providerId": "smstunnel-phone-number",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 100,
+      "config": {}
+    }
+  ],
+  "authenticationFlows": [
+    {
+      "alias": "browser with SMSTunnel",
+      "description": "The password, then a code by SMS through SMSTunnel",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "requirement": "ALTERNATIVE",
+          "priority": 20,
+          "authenticatorFlow": true,
+          "autheticatorFlow": true,
+          "flowAlias": "browser with SMSTunnel forms",
+          "userSetupAllowed": false
+        }
+      ]
+    },
+    {
+      "alias": "browser with SMSTunnel forms",
+      "description": "Username and password, then the SMS code",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "authenticatorFlow": false,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        },
+        {
+          "authenticator": "smstunnel-sms-code",
+          "authenticatorConfig": "SMSTunnel test",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "authenticatorFlow": false,
+          "autheticatorFlow": false,
+          "userSetupAllowed": false
+        }
+      ]
+    }
+  ],
+  "authenticatorConfig": [
+    {
+      "alias": "SMSTunnel test",
+      "config": {
+        "apiKey": "${vault.smstunnel_api_key}",
+        "baseUrl": "${SMSTUNNEL_BASE_URL}",
+        "defaultCountryCode": "+1",
+        "phoneAttribute": "phoneNumber",
+        "codeLength": "6",
+        "codeTtl": "300",
+        "maxAttempts": "3",
+        "maxSends": "3",
+        "resendAfter": "5"
+      }
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "test-app",
+      "name": "SMSTunnel test app",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost/smstunnel-e2e/*"],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    },
+    {
+      "clientId": "test-app-legacy-theme",
+      "name": "SMSTunnel test app (older login theme)",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost/smstunnel-e2e/*"],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "login_theme": "keycloak"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "email": "alice@example.invalid",
+      "emailVerified": true,
+      "firstName": "Alice",
+      "lastName": "Test",
+      "attributes": { "phoneNumber": ["+14155557351"] },
+      "credentials": [{ "type": "password", "value": "alice-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "email": "bob@example.invalid",
+      "emailVerified": true,
+      "firstName": "Bob",
+      "lastName": "Test",
+      "credentials": [{ "type": "password", "value": "bob-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "carol",
+      "enabled": true,
+      "email": "carol@example.invalid",
+      "emailVerified": true,
+      "firstName": "Carol",
+      "lastName": "Test",
+      "attributes": { "phoneNumber": ["+14155557353"] },
+      "credentials": [{ "type": "password", "value": "carol-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "dave",
+      "enabled": true,
+      "email": "dave@example.invalid",
+      "emailVerified": true,
+      "firstName": "Dave",
+      "lastName": "Test",
+      "attributes": { "phoneNumber": ["+14155557354"] },
+      "credentials": [{ "type": "password", "value": "dave-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "erin",
+      "enabled": true,
+      "email": "erin@example.invalid",
+      "emailVerified": true,
+      "firstName": "Erin",
+      "lastName": "Test",
+      "attributes": { "phoneNumber": ["+14155557355"] },
+      "credentials": [{ "type": "password", "value": "erin-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "frank",
+      "enabled": true,
+      "email": "frank@example.invalid",
+      "emailVerified": true,
+      "firstName": "Frank",
+      "lastName": "Test",
+      "attributes": { "phoneNumber": ["+14155557356"] },
+      "credentials": [{ "type": "password", "value": "frank-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "gina",
+      "enabled": true,
+      "email": "gina@example.invalid",
+      "emailVerified": true,
+      "firstName": "Gina",
+      "lastName": "Test",
+      "credentials": [{ "type": "password", "value": "gina-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "henry",
+      "enabled": true,
+      "email": "henry@example.invalid",
+      "emailVerified": true,
+      "firstName": "Henry",
+      "lastName": "Test",
+      "attributes": { "phoneNumber": ["+14155557357"] },
+      "credentials": [{ "type": "password", "value": "henry-e2e-password", "temporary": false }]
+    },
+    {
+      "username": "ivy",
+      "enabled": true,
+      "email": "ivy@example.invalid",
+      "emailVerified": true,
+      "firstName": "Ivy",
+      "lastName": "Test",
+      "attributes": { "phoneNumber": ["+14155557358"] },
+      "credentials": [{ "type": "password", "value": "ivy-e2e-password", "temporary": false }]
+    }
+  ],
+  "components": {
+    "org.keycloak.userprofile.UserProfileProvider": [
+      {
+        "providerId": "declarative-user-profile",
+        "subComponents": {},
+        "config": {
+          "kc.user.profile.config": [
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"Username\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"Email\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"First name\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"Last name\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"phoneNumber\",\"displayName\":\"Phone number\",\"validations\":{\"length\":{\"max\":32}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}],\"unmanagedAttributePolicy\":\"ADMIN_VIEW\"}"
+          ]
+        }
+      }
+    ]
+  }
+}
